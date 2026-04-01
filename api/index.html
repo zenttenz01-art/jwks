@@ -166,9 +166,27 @@
             </div>
         </div>
 
-        <div id="tab-email" class="hidden-tab text-center py-20 glass-card rounded-[3rem]">
-            <h2 class="text-5xl font-black font-heading italic opacity-20 uppercase tracking-tighter">Email Intelligence</h2>
-            <p class="mt-4 font-bold tracking-[0.5em] uppercase coming-soon-glow" style="color:var(--accent)">Coming Soon</p>
+        <div id="tab-email" class="hidden-tab space-y-12">
+            <div class="text-center space-y-4">
+                <h2 class="text-5xl md:text-7xl font-extrabold font-heading tracking-tighter">Email <span style="color:var(--accent); font-style: italic;">Intelligence</span></h2>
+                <p class="text-slate-500 font-medium">Deep cross-reference and verification lookup.</p>
+            </div>
+
+            <div class="glass-card p-2 rounded-[2.5rem]">
+                <div class="flex flex-col md:flex-row gap-2">
+                    <input id="emailInput" type="email" placeholder="Enter email address..." class="flex-1 bg-transparent py-5 px-8 outline-none text-xl text-white placeholder:text-slate-700" onkeydown="if(event.key === 'Enter') fetchEmailData()">
+                    <button onclick="fetchEmailData()" id="emailFetchBtn" class="btn-premium px-10 py-5 rounded-[1.8rem] flex items-center justify-center gap-2">
+                        <span id="emailBtnText">FETCH DATA</span>
+                        <div id="emailBtnLoader" class="loading-spinner"></div>
+                        <i id="emailZapIcon" data-lucide="zap" class="w-5 h-5 fill-current"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="emailResultsArea" class="hidden space-y-4">
+                <div id="emailOutputContainer" class="space-y-4">
+                    </div>
+            </div>
         </div>
     </main>
 
@@ -203,18 +221,14 @@
             const input = document.getElementById("usernameInput");
             const username = input.value.trim();
             if (!username) return;
-
             document.getElementById("btnText").style.display = "none";
             document.getElementById("btnLoader").style.display = "block";
             document.getElementById("zapIcon").style.display = "none";
             input.disabled = true;
-
             try {
                 const res = await fetch(`/lookup?username=${encodeURIComponent(username)}`);
                 const data = await res.json();
-
                 if (data.error) { alert(data.error); return; }
-
                 document.getElementById("nickname").textContent = data.nickname || "Unknown";
                 document.getElementById("usernameDisplay").textContent = data.username || username;
                 document.getElementById("avatar").src = data.profile_pic || "";
@@ -228,21 +242,63 @@
                 document.getElementById("nickname_edited").textContent = data.nickname_edited || "Never";
                 document.getElementById("passkey").textContent = data.has_passkey ? "Yes ✅" : "No ❌";
                 document.getElementById("downloadBtn").href = data.profile_pic || "#";
-
                 const area = document.getElementById("resultsArea");
                 area.classList.remove("hidden");
                 area.classList.remove("active");
                 void area.offsetWidth; 
                 area.classList.add("active");
-
             } catch (err) {
-                alert("Lookup failed. Check backend connection.");
+                alert("Lookup failed.");
             } finally {
                 document.getElementById("btnText").style.display = "block";
                 document.getElementById("btnLoader").style.display = "none";
                 document.getElementById("zapIcon").style.display = "block";
                 input.disabled = false;
                 lucide.createIcons();
+            }
+        }
+
+        let emailPoll;
+        async function fetchEmailData() {
+            const input = document.getElementById("emailInput");
+            const email = input.value.trim();
+            if (!email) return;
+
+            // Delete old results immediately
+            const container = document.getElementById("emailOutputContainer");
+            container.innerHTML = "";
+            document.getElementById("emailResultsArea").classList.add("hidden");
+
+            document.getElementById("emailBtnText").style.display = "none";
+            document.getElementById("emailBtnLoader").style.display = "block";
+            document.getElementById("emailZapIcon").style.display = "none";
+
+            try {
+                await fetch(`/send_email?email=${encodeURIComponent(email)}`);
+                if (emailPoll) clearInterval(emailPoll);
+
+                emailPoll = setInterval(async () => {
+                    const res = await fetch('/get_email_results');
+                    const data = await res.json();
+
+                    if (data.results.length >= 2) {
+                        clearInterval(emailPoll);
+                        document.getElementById("emailResultsArea").classList.remove("hidden");
+                        data.results.forEach(text => {
+                            const bubble = document.createElement("div");
+                            bubble.className = "glass-card p-6 rounded-[2rem] border-l-4 fade-in-node";
+                            bubble.style.borderColor = "var(--accent)";
+                            bubble.innerHTML = `<p class="text-sm font-mono whitespace-pre-wrap">${text}</p>`;
+                            container.appendChild(bubble);
+                        });
+                        document.getElementById("emailBtnText").style.display = "block";
+                        document.getElementById("emailBtnLoader").style.display = "none";
+                        document.getElementById("emailZapIcon").style.display = "block";
+                        lucide.createIcons();
+                    }
+                }, 3000);
+            } catch (err) {
+                alert("Request failed.");
             }
         }
     </script>

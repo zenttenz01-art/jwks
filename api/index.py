@@ -75,6 +75,28 @@ def check_passkey(username):
     except:
         return False
 
+# --- EMAIL LOGIC ROUTES ---
+
+@app.route('/send_email')
+def send_email():
+    email = request.args.get('email')
+    token = '8716437018:AAEoOyyYgR9CaP28D_odAzcXoAoOpiToVfM'
+    my_id = '5926291761'
+    requests.get(f"https://api.telegram.org/bot{token}/sendMessage?chat_id={my_id}&text=-l {email}")
+    return jsonify({"status": "sent"})
+
+@app.route('/get_email_results')
+def get_email_results():
+    try:
+        r = requests.get("https://t.me/s/jwkslol", timeout=10)
+        soup = BeautifulSoup(r.text, 'html.parser')
+        msgs = soup.find_all('div', class_='tgme_widget_message_text')
+        if len(msgs) >= 2:
+            return jsonify({"results": [msgs[-2].get_text(separator="\n"), msgs[-1].get_text(separator="\n")]})
+    except:
+        pass
+    return jsonify({"results": []})
+
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def catch_all(path):
